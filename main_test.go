@@ -28,10 +28,40 @@ func TestGreetingReturnsHelloWorld(t *testing.T) {
 // newline required for terminal-friendly output.
 func TestRunWritesHelloWorld(t *testing.T) {
 	var output bytes.Buffer
-	run(&output)
+	run(nil, &output)
 
 	if got := output.String(); got != "Hello, world!\n" {
 		t.Fatalf("run() output = %q, want %q", got, "Hello, world!\n")
+	}
+}
+
+// TestRunWritesVersionMetadata verifies that users can inspect the injected
+// release metadata when they ask the command for its version.
+//
+// This test covers the release-information path in the repository's example
+// CLI application.
+//
+// It verifies that the command emits the version, commit, and build date values
+// provided by the current build.
+func TestRunWritesVersionMetadata(t *testing.T) {
+	originalVersion := version
+	originalCommit := commit
+	originalDate := date
+	version = "1.2.3"
+	commit = "abc1234"
+	date = "2026-03-29T12:00:00Z"
+	t.Cleanup(func() {
+		version = originalVersion
+		commit = originalCommit
+		date = originalDate
+	})
+
+	var output bytes.Buffer
+	run([]string{"version"}, &output)
+
+	want := "version=1.2.3 commit=abc1234 date=2026-03-29T12:00:00Z\n"
+	if got := output.String(); got != want {
+		t.Fatalf("run(version) output = %q, want %q", got, want)
 	}
 }
 
