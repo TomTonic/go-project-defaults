@@ -29,25 +29,49 @@ jobs:
         with:
           egress-policy: audit
 
-      - name: Check required secrets
+      - name: Check workflow prerequisites
+        id: prereq
         shell: bash
         env:
           GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+          GRYPE_BADGE_GIST_ID: ${{ vars.GRYPE_BADGE_GIST_ID }}
         run: |
           set -euo pipefail
           if [[ -z "$GIST_TOKEN" ]]; then
-            echo "Missing required secret: GIST_TOKEN" >&2
-            exit 1
+            echo "GIST_TOKEN is not configured; skipping badge update."
+            echo "has_prerequisites=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          if [[ -z "$GRYPE_BADGE_GIST_ID" ]]; then
+            echo "GRYPE_BADGE_GIST_ID is not configured; skipping badge update."
+            echo "has_prerequisites=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "has_prerequisites=true" >> "$GITHUB_OUTPUT"
 
       - name: Checkout (with tags)
+        if: steps.prereq.outputs.has_prerequisites == 'true'
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
           fetch-tags: true
 
+      - name: Check for version tags
+        if: steps.prereq.outputs.has_prerequisites == 'true'
+        id: release_check
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "$(git tag -l 'v*' | head -n 1)" ]]; then
+            echo "has_release=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "No version tags found; skipping vulnerability scan."
+          echo "has_release=false" >> "$GITHUB_OUTPUT"
+
       # Don't pin grype_me — the rolling tag updates daily with fresh DB.
       - name: Scan latest release
+        if: steps.prereq.outputs.has_prerequisites == 'true' && steps.release_check.outputs.has_release == 'true'
         id: grype
         uses: TomTonic/grype_me@v1
         with:
