@@ -2,8 +2,7 @@
 ---
 version: 2
 
-# TODO: Set your project name.
-project_name: my-project
+project_name: go-project-defaults
 
 before:
   hooks:
