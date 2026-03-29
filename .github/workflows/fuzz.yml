@@ -1,0 +1,62 @@
+---
+# Go fuzz testing.
+#
+# DISABLED BY DEFAULT — only workflow_dispatch is active.
+# To enable scheduled runs, uncomment the schedule trigger below.
+#
+# Adjust FUZZ_TIME to control how long each fuzz target runs.
+
+name: Fuzz
+
+on:
+  workflow_dispatch:
+  # Uncomment to run on schedule:
+  # schedule:
+  #   - cron: '0 3 * * 6'  # weekly on Saturday at 03:00 UTC
+
+permissions:
+  contents: read
+
+env:
+  FUZZ_TIME: 60s
+
+jobs:
+  fuzz:
+    name: Fuzz
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Go
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version-file: go.mod
+
+      - name: Find and run fuzz targets
+        run: |
+          set -euo pipefail
+          TARGETS=$(grep -r --include='*_test.go' -l 'func Fuzz' . || true)
+          if [ -z "$TARGETS" ]; then
+            echo "No fuzz targets found, skipping."
+            exit 0
+          fi
+          FAILED=0
+          for file in $TARGETS; do
+            DIR=$(dirname "$file")
+            FUNCS=$(grep -oP 'func \K(Fuzz\w+)' "$file")
+            for FUNC in $FUNCS; do
+              echo "::group::Fuzzing $FUNC in $DIR"
+              if ! go test "$DIR" -fuzz="^${FUNC}$" -fuzztime="$FUZZ_TIME" -race; then
+                echo "::error::Fuzz target $FUNC in $DIR failed"
+                FAILED=1
+              fi
+              echo "::endgroup::"
+            done
+          done
+          exit $FAILED
