@@ -20,7 +20,9 @@
     {
       // Special case: Go modules
       "matchManagers": ["gomod"],
-      "commitMessageAction": "Update source code dependency",
+      // for Go, {{depName}} will be "module github.com/proj/abc" so omit the word "dependency"
+      "commitMessageAction": "Update source code",
+      // "commitMessageAction": "Update source code dependency",
     },
     {
       // Special case: GitHub Actions
