@@ -7,28 +7,43 @@
   ],
   "reviewers": ["TomTonic"],
   "labels": ["dependencies"],
-  "commitMessagePrefix": "deps-upd:",
-  "commitMessageAction": "Update",
   "timezone": "Europe/Berlin",
   "schedule": ["before 6am"],
   "prHourlyLimit": 2,
   "prConcurrentLimit": 5,
   "postUpdateOptions": ["gomodTidy"],
+  "prTitle": "Update dependency {{depName}} from {{currentVersion}} to {{newVersion}}",
+  "commitMessagePrefix": "[auto]",
+  "commitMessageAction": "Update dependency",
+  "commitMessageTopic": "{{depName}}",
+  "commitMessageExtra": "from {{currentVersion}} to {{newVersion}}",
   "packageRules": [
+    {
+      // Special case: Go modules
+      "matchManagers": ["gomod"],
+      "prTitle": "Update source code dependency {{depName}} from {{currentVersion}} to {{newVersion}}",
+      "commitMessageAction": "Update source code dependency",
+    },
+    {
+      // Special case: GitHub Actions
+      "matchManagers": ["github-actions"],
+      "prTitle": "Update build process dependency {{depName}} from {{currentVersion}} to {{newVersion}}",
+      "commitMessageAction": "Update build process dependency",
+    },
     {
       "description": "Let new Go releases settle before updating",
       "matchCategories": ["golang"],
       "minimumReleaseAge": "2 days"
     },
-    {
-      "matchManagers": ["gomod"],
-      "groupName": "Go dependencies"
-    },
-    {
-      "matchManagers": ["github-actions"],
-      "groupName": "GitHub Actions",
-      "schedule": ["before 4pm on friday"]
-    },
+//    {
+//      "matchManagers": ["gomod"],
+//      "groupName": "Go dependencies"
+//    },
+//    {
+//      "matchManagers": ["github-actions"],
+//      "groupName": "GitHub Actions",
+//      "schedule": ["before 4pm on friday"]
+//    },
     {
       "description": "Automerge patches and minor updates when CI is green",
       "matchUpdateTypes": ["patch", "minor", "pin", "digest"],
