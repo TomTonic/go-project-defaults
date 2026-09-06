@@ -188,7 +188,13 @@ Customize `.goreleaser.yml`:
 ## Design Decisions
 
 - **SHA-pinned actions** with version comments. Renovate updates these automatically.
-- **`step-security/harden-runner`** in every workflow for supply-chain hardening.
+- **Explicit least-privilege `permissions:`** in every workflow, narrowed per
+  job where a job needs more. Together with SHA-pinning this is the whole
+  supply-chain hardening baseline. A `step-security/harden-runner` step used
+  to sit at the top of every workflow as well; it was dropped because it ran
+  in `egress-policy: audit` mode, which only reports egress after the fact
+  and blocks nothing — not enough value to justify a third-party action with
+  runner-level access in every single job.
 - **Go version from `go.mod`** (`go-version-file`) — no version duplication.
 - **Gist-based badges** instead of branch-based — no dead `badges` branch cluttering your repo.
 - **`katexochen/go-tidy-check`** in CI catches forgotten `go mod tidy`.
