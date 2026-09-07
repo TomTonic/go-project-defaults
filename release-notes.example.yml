@@ -16,3 +16,10 @@
 # known_not_applicable:
 #   - id: CVE-YYYY-NNNNN
 #     reason: we only import the unaffected subpackage
+
+# Where to actually find each direct dependency's release notes (its repo
+# root is often not it). Caches the *location* only — content is still
+# re-read fresh every release.
+# changelog_sources:
+#   - module: github.com/example/some-lib
+#     url: https://github.com/example/some-lib/releases

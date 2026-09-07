@@ -25,12 +25,16 @@ tag_scheme: <free text, only present if this repo's tags deviate from
 known_not_applicable:
   - id: <CVE-... or GHSA-...>
     reason: <short, already-vetted reason this never applies to this repo>
+changelog_sources:
+  - module: <module path>
+    url: <the page with this module's real release notes, e.g. its GitHub
+      Releases page or a CHANGELOG.md — often not its repo root>
 ```
 
-All three keys are optional. If the file is absent, assume: no core
-dependency pass-through, standard tag scheme (`git describe --tags
---abbrev=0` / most recent tag reachable from the tip), and no pre-vetted
-advisory exceptions.
+All four keys are optional. If the file is absent, assume: no core
+dependency, standard tag scheme (`git describe --tags --abbrev=0` / most
+recent tag reachable from the tip), no pre-vetted advisory exceptions, and
+no known changelog locations (look each one up as needed).
 
 ## 1. Determine scope
 
@@ -58,16 +62,15 @@ User-visible capabilities that did not exist in the previous release.
 Describe each from the user's perspective: what they can do now that they
 couldn't before, and when they'd use it. Avoid internal implementation
 detail unless it directly affects usage. Include capabilities inherited from
-an upstream update of the core functional dependency (see "Core dependency
-pass-through" below), attributed as such. Clearly indicate if a capability
-is inherited from an upstream update.
+an upstream update of a direct dependency (see "Direct dependency changelog
+scan" below), attributed as such.
 
 ### Changed or Fixed Behavior
 Existing functionality that behaves differently after this release,
 including bug fixes where the tool previously did not behave as expected.
 Call out anything that requires users to adjust their configuration,
 tooling, or usage habits. Flag breaking changes explicitly. Include behavior
-changes inherited from the core dependency's own bug fixes, attributed as
+changes inherited from a direct dependency's own bug fixes, attributed as
 such.
 
 ### Architectural Changes
@@ -117,13 +120,27 @@ releases don't re-derive it. List each ID with a short reason it doesn't
 apply, so readers cross-checking scanner output against this changelog
 aren't left wondering why it's missing from Dependency Updates.
 
-**Core dependency pass-through:** if `core_dependency` is set in the config,
-that module's own upstream changelog matters as much as this project's
-commits. Whenever it's bumped, read its release notes for the covered
-version range and surface: new capabilities → New Features; bug
-fixes/behavior changes → Changed or Fixed Behavior; security fixes → the CVE
-enumeration above (same newly-fixed rule). Attribute each as "Inherited from
-the `<name>` upgrade: ...".
+**Direct dependency changelog scan:** grype/govulncheck only catch security
+fixes — they say nothing about new features or behavior changes a bumped
+dependency brings along, and those matter too. So for every *direct*
+dependency bumped this release (not transitive — there are usually far too
+many of those to check individually, and users never invoke them directly),
+read its own release notes for the version range covered and surface: new
+capabilities → New Features; bug fixes/behavior changes → Changed or Fixed
+Behavior; security fixes → the CVE enumeration above (same newly-fixed
+rule). Attribute each as "Inherited from the `<module>` upgrade: ...". If
+`core_dependency` is set, it goes through the same process — it's just the
+one direct dependency most likely to matter, since it drives this project's
+actual functionality, so don't let it slip past a quick skim.
+
+A GitHub repo's root usually isn't where the real release notes live — check
+for a `CHANGELOG.md`, the GitHub Releases page, or a docs site instead.
+Check `changelog_sources` in the config first; for any bumped direct
+dependency not listed there, find its actual release-notes location via
+WebFetch/WebSearch, then tell the user it's worth adding to
+`changelog_sources` in `.claude/release-notes.yml` so future releases skip
+that search (the location rarely changes; the content still needs a fresh
+read every time).
 
 ### CI Updates
 CI pipeline changes: linter upgrades, new analysis rules, runner image
