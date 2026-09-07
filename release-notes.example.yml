@@ -9,6 +9,10 @@
 # tags (e.g. date-based tags, a monorepo with per-package prefixes).
 # tag_scheme: ""
 
+# Only for cases govulncheck/grype can't resolve mechanically on their own
+# (non-Go components, cgo, business-logic reasons) — reachability that
+# govulncheck can already determine is re-checked fresh every release and
+# doesn't belong here.
 # known_not_applicable:
 #   - id: CVE-YYYY-NNNNN
 #     reason: we only import the unaffected subpackage

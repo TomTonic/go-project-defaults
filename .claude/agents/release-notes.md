@@ -82,34 +82,40 @@ Language/runtime dependency updates (e.g. toolchain bumps — a new compiler
 can change runtime behavior or safety guarantees), plus all direct/transitive
 module bumps.
 
-**CVE enumeration (IDs only, no descriptions):** for every dependency bumped
-in this release, check whether the new version fixes a disclosed CVE/GHSA
-that was *not* already fixed in the version used at the last release. Verify
-each candidate against the dependency's own release notes/changelog or the
-GitHub/Go vulnerability databases via WebFetch/WebSearch — never guess or
-infer an identifier. List every ID newly fixed by this update batch,
-regardless of whether this project's code actually exercises the affected
-component — a CVE scanner run against the dependency tree would flag it
-either way, so it belongs here too. If none are newly fixed, state that
-explicitly (e.g. "No CVEs were fixed by this update batch.") rather than
-silently omitting the check.
+**CVE enumeration (IDs only, no descriptions):** determine this mechanically
+instead of researching each dependency by hand:
+1. `git worktree add /tmp/release-notes-baseline <last-tag>` for a real
+   checkout of the last release, then `grype dir:/tmp/release-notes-baseline
+   -o json` and `grype dir:. -o json` (HEAD) and diff the two
+   `.matches[].vulnerability.id` sets. Anything present at the old tag and
+   absent at HEAD was fixed by this update batch; list every such ID
+   regardless of reachability — a scanner run against the dependency tree
+   would flag it either way, so it belongs here too. Remove the worktree
+   afterward (`git worktree remove /tmp/release-notes-baseline`).
+2. If `grype` isn't installed, tell the user (install docs:
+   https://github.com/anchore/grype#installation) and fall back to
+   WebFetch/WebSearch against the dependency's own changelog or the
+   GitHub/Go vulnerability databases — never guess or infer an identifier.
+If none are newly fixed, state that explicitly (e.g. "No CVEs were fixed by
+this update batch.") rather than silently omitting the check.
 
-**Advisories Flagged but Not Applicable:** CVE/GHSA IDs a scanner would
-likely still report against a bumped dependency's version number, but that
-*do not apply* to code this project actually exercises (e.g. an advisory in
-a component the project doesn't import from a multi-component dependency),
-or that were already fixed before this project's last release baseline.
-List each ID with a short reason it doesn't apply, so readers cross-checking
-scanner output against this changelog aren't left wondering why it's missing
-from Dependency Updates.
-
-Start from any `known_not_applicable` entries in the config that are
-relevant to dependencies bumped this release — use their reason verbatim or
-lightly adapted. Then independently check for *new* advisories this release
-might trigger that aren't yet in that list; if you confirm one is
-persistently not-applicable (not just a one-off), tell the user it's a good
-candidate to add to `known_not_applicable` in `.claude/release-notes.yml` so
-future releases don't re-derive it.
+**Advisories Flagged but Not Applicable:** CVE/GHSA IDs `grype` reports
+against a bumped dependency's version number that don't apply to code this
+project actually exercises, or that were already fixed before this
+project's last release baseline. Resolve mechanically first: run
+`govulncheck ./...` at HEAD (install: `go install
+golang.org/x/vuln/cmd/govulncheck@latest`) — any flagged ID whose vulnerable
+symbols it reports as unreachable belongs here automatically. Re-derive this
+fresh every release; it's cheap and authoritative, so don't cache these in
+`known_not_applicable`. For IDs govulncheck can't evaluate (non-Go
+components, cgo, or a business-logic reason no static tool can see), start
+from `known_not_applicable` in the config instead; for anything not yet
+listed there, research a short justification (WebFetch/WebSearch is fine
+here — this is prose, not detection) and tell the user it's a good candidate
+to add to `known_not_applicable` in `.claude/release-notes.yml` so future
+releases don't re-derive it. List each ID with a short reason it doesn't
+apply, so readers cross-checking scanner output against this changelog
+aren't left wondering why it's missing from Dependency Updates.
 
 **Core dependency pass-through:** if `core_dependency` is set in the config,
 that module's own upstream changelog matters as much as this project's
