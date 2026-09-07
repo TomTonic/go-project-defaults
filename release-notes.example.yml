@@ -1,9 +1,18 @@
 # Copy to .claude/release-notes.yml in your project and customize.
 # All keys are optional — omit any that don't apply.
 
-# core_dependency:
-#   module: github.com/example/some-core-lib
-#   name: some-core-lib
+# A list, not a single entry — some projects have several equally "defining"
+# dependencies (e.g. a Docker image built from an upstream project plus a
+# couple of plugins, none of which alone is *the* core dependency).
+# core_dependencies:
+#   - module: github.com/example/some-core-lib
+#     name: some-core-lib
+#   - module: github.com/example/some-plugin
+#     name: some-plugin
+#     # Only needed when the version isn't derivable from go.mod/go.sum —
+#     # e.g. a Docker-image build wrapper pinning it as a tag in a config
+#     # file instead of importing it.
+#     pinned_in: build-versions.json#.some_plugin_tag
 
 # Only needed if this repo's tags deviate from standard semver/chronological
 # tags (e.g. date-based tags, a monorepo with per-package prefixes).

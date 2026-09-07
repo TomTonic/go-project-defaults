@@ -16,9 +16,13 @@ Before anything else, look for a config file at `.claude/release-notes.yml` in
 the repo root. If present, read it. It may declare:
 
 ```yaml
-core_dependency:
-  module: <module path, e.g. github.com/anchore/syft>
-  name: <short name to use in prose, e.g. syft>
+core_dependencies:
+  - module: <module path, e.g. github.com/anchore/syft>
+    name: <short name to use in prose, e.g. syft>
+    pinned_in: <optional "<file>#<key>", e.g.
+      "build-versions.json#.coredns_tag" — only needed when the version
+      isn't derivable from go.mod/go.sum, e.g. a Docker-image build wrapper
+      that pins it as a tag/digest in a config file instead of importing it>
 tag_scheme: <free text, only present if this repo's tags deviate from
   standard semver/chronological tags — follow its instructions for finding
   "the last published tag">
@@ -31,10 +35,14 @@ changelog_sources:
       Releases page or a CHANGELOG.md — often not its repo root>
 ```
 
-All four keys are optional. If the file is absent, assume: no core
-dependency, standard tag scheme (`git describe --tags --abbrev=0` / most
-recent tag reachable from the tip), no pre-vetted advisory exceptions, and
-no known changelog locations (look each one up as needed).
+`core_dependencies` is a list, not a single entry — a project can have
+several equally "defining" dependencies (e.g. a Docker image that's built
+from an upstream project plus a couple of plugins, none of which alone is
+*the* core dependency). All four keys are optional. If the file is absent,
+assume: no core dependencies, standard tag scheme (`git describe --tags
+--abbrev=0` / most recent tag reachable from the tip), no pre-vetted
+advisory exceptions, and no known changelog locations (look each one up as
+needed).
 
 ## 1. Determine scope
 
@@ -108,12 +116,16 @@ instead of researching each dependency by hand:
    `package.json`, etc.) — e.g. it's a Docker-image build wrapper that pins
    its real dependencies (base images, or other repos built from source) as
    tags/digests in a config file rather than importing them — `grype dir:.`
-   will silently find nothing. Identify those pinned references instead
-   (check the Dockerfile, build scripts, or a versions/config file) and
-   scan each directly: `grype <image-ref>` for an image tag or digest, or
-   clone + `git worktree` + step 1's diff (+ step 2's `govulncheck`, if it
-   has a `go.mod`) for a pinned external source repo, at both its old and
-   new pinned ref.
+   will silently find nothing. Find the old/new pinned version for each: use
+   `core_dependencies[].pinned_in` from the config if set (a `<file>#<key>`
+   pointer, e.g. `build-versions.json#.coredns_tag` — diff that key between
+   the last tag and HEAD); otherwise look for it yourself (Dockerfile, build
+   scripts, a versions/config file) and tell the user it's worth adding as
+   `pinned_in` so future releases don't need to re-locate it. Then scan each
+   directly: `grype <image-ref>` for an image tag or digest, or clone +
+   `git worktree` + step 1's diff (+ step 2's `govulncheck`, if it has a
+   `go.mod`) for a pinned external source repo, at both its old and new
+   pinned ref.
 4. If `grype` isn't installed, tell the user (install docs:
    https://github.com/anchore/grype#installation) and fall back to
    WebFetch/WebSearch against the dependency's own changelog or the
@@ -147,10 +159,11 @@ many of those to check individually, and users never invoke them directly),
 read its own release notes for the version range covered and surface: new
 capabilities → New Features; bug fixes/behavior changes → Changed or Fixed
 Behavior; security fixes → the CVE enumeration above (same newly-fixed
-rule). Attribute each as "Inherited from the `<module>` upgrade: ...". If
-`core_dependency` is set, it goes through the same process — it's just the
-one direct dependency most likely to matter, since it drives this project's
-actual functionality, so don't let it slip past a quick skim.
+rule). Attribute each as "Inherited from the `<module>` upgrade: ...". Every
+entry in `core_dependencies` goes through the same process — they're just
+the direct dependencies most likely to matter, since together they define
+this project's actual functionality, so don't let any of them slip past a
+quick skim.
 
 A GitHub repo's root usually isn't where the real release notes live — check
 for a `CHANGELOG.md`, the GitHub Releases page, or a docs site instead.
