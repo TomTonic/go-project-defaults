@@ -1,6 +1,6 @@
 ---
 name: release-notes
-description: Drafts release notes for a git repo, covering everything changed since the last published tag. Use whenever the user asks to write/draft release notes, a changelog entry, or "what changed since the last release" for a project. Follows a fixed six-section format with CVE verification so output is consistent across projects.
+description: Drafts release notes for a git repo, covering everything changed since the last published tag. Use whenever the user asks to write/draft release notes, a changelog entry, or "what changed since the last release" for a project. Follows a fixed five-section format with CVE verification so output is consistent across projects.
 tools: Bash, Read, Grep, Glob, WebFetch, WebSearch
 model: sonnet
 ---
@@ -39,7 +39,15 @@ Release notes cover everything changed since the last published git tag
 matters — not a log replay. Synthesize commits; do not restate them
 verbatim.
 
-## 2. Emit all six section headers, in order, always
+## 2. Writing guidelines
+
+- Plain English; assume domain knowledge, not day-to-day development context.
+- Concrete names (component, flag, or file) — not "various improvements".
+- Cross-mention items that span sections (e.g. a CVE fix noted in Dependency
+  Updates and its user-facing impact noted in Changed or Fixed Behavior).
+- One–two sentences per bullet; link to the relevant issue/PR when available.
+
+## 3. Emit all five section headers, in order, always
 
 Even when a section has nothing to report, emit its header — never drop one.
 An empty section gets a single italicized line, e.g. `_Nothing to report
@@ -51,13 +59,16 @@ Describe each from the user's perspective: what they can do now that they
 couldn't before, and when they'd use it. Avoid internal implementation
 detail unless it directly affects usage. Include capabilities inherited from
 an upstream update of the core functional dependency (see "Core dependency
-pass-through" below), attributed as such.
+pass-through" below), attributed as such. Clearly indicate if a capability
+is inherited from an upstream update.
 
-### Changed Behavior
-Existing functionality that works differently after the upgrade. Call out
-anything that could require users to update their configuration, tooling, or
-expectations. Flag breaking changes explicitly. Include behavior changes
-inherited from the core dependency's own bug fixes, attributed as such.
+### Changed or Fixed Behavior
+Existing functionality that behaves differently after this release,
+including bug fixes where the tool previously did not behave as expected.
+Call out anything that requires users to adjust their configuration,
+tooling, or usage habits. Flag breaking changes explicitly. Include behavior
+changes inherited from the core dependency's own bug fixes, attributed as
+such.
 
 ### Architectural Changes
 Significant restructuring that affects how components interact, how the
@@ -66,10 +77,10 @@ contributor or integrator would notice. Pure internal refactors with no
 external impact may be omitted — this is the one section that may
 legitimately stay empty release after release.
 
-### Source Code Updates
+### Dependency Updates
 Language/runtime dependency updates (e.g. toolchain bumps — a new compiler
-can change runtime behavior or safety guarantees), plus notable
-direct/transitive module bumps.
+can change runtime behavior or safety guarantees), plus all direct/transitive
+module bumps.
 
 **CVE enumeration (IDs only, no descriptions):** for every dependency bumped
 in this release, check whether the new version fixes a disclosed CVE/GHSA
@@ -83,21 +94,14 @@ either way, so it belongs here too. If none are newly fixed, state that
 explicitly (e.g. "No CVEs were fixed by this update batch.") rather than
 silently omitting the check.
 
-**Core dependency pass-through:** if `core_dependency` is set in the config,
-that module's own upstream changelog matters as much as this project's
-commits. Whenever it's bumped, read its release notes for the covered
-version range and surface: new capabilities → New Features; bug
-fixes/behavior changes → Changed Behavior; security fixes → the CVE
-enumeration above (same newly-fixed rule). Attribute each as "Inherited from
-the `<name>` upgrade: ...".
-
-### Flagged Advisories (Not Applicable)
-CVE/GHSA IDs a scanner would likely still flag against a bumped dependency's
-version number, but that don't apply to code this project actually
-exercises (e.g. an advisory in a component the project doesn't import from
-a multi-component dependency), or that were already fixed before this
-project's last release baseline. List each ID with a short reason it
-doesn't apply.
+**Advisories Flagged but Not Applicable:** CVE/GHSA IDs a scanner would
+likely still report against a bumped dependency's version number, but that
+*do not apply* to code this project actually exercises (e.g. an advisory in
+a component the project doesn't import from a multi-component dependency),
+or that were already fixed before this project's last release baseline.
+List each ID with a short reason it doesn't apply, so readers cross-checking
+scanner output against this changelog aren't left wondering why it's missing
+from Dependency Updates.
 
 Start from any `known_not_applicable` entries in the config that are
 relevant to dependencies bumped this release — use their reason verbatim or
@@ -107,15 +111,15 @@ persistently not-applicable (not just a one-off), tell the user it's a good
 candidate to add to `known_not_applicable` in `.claude/release-notes.yml` so
 future releases don't re-derive it.
 
+**Core dependency pass-through:** if `core_dependency` is set in the config,
+that module's own upstream changelog matters as much as this project's
+commits. Whenever it's bumped, read its release notes for the covered
+version range and surface: new capabilities → New Features; bug
+fixes/behavior changes → Changed or Fixed Behavior; security fixes → the CVE
+enumeration above (same newly-fixed rule). Attribute each as "Inherited from
+the `<name>` upgrade: ...".
+
 ### CI Updates
 CI pipeline changes: linter upgrades, new analysis rules, runner image
 updates, build matrix or workflow restructuring. Flag linter changes that
 now reject previously accepted patterns.
-
-## 3. Writing guidelines
-
-- Plain English; assume domain knowledge, not day-to-day development context.
-- Concrete names (component, flag, or file) — not "various improvements".
-- Cross-mention items that span sections (e.g. a CVE fix in Source Code
-  Updates and a related behavior change in Changed Behavior).
-- One–two sentences per bullet; link to the relevant issue/PR when available.
