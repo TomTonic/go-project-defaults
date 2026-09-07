@@ -1,0 +1,14 @@
+# Copy to .claude/release-notes.yml in your project and customize.
+# All keys are optional — omit any that don't apply.
+
+# core_dependency:
+#   module: github.com/example/some-core-lib
+#   name: some-core-lib
+
+# Only needed if this repo's tags deviate from standard semver/chronological
+# tags (e.g. date-based tags, a monorepo with per-package prefixes).
+# tag_scheme: ""
+
+# known_not_applicable:
+#   - id: CVE-YYYY-NNNNN
+#     reason: we only import the unaffected subpackage

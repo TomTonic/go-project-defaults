@@ -13,6 +13,7 @@ referenced from a single line — so you get central control without copying.
 |---|---|---|
 | **Reference** (single source of truth) | Renovate config | Your project's `renovate.json` contains one `extends` line pointing here. Changes to the preset take effect everywhere automatically. |
 | **Copy** (into each repo) | Everything else | Tools require these files locally. Copy them once, then customize `TODO:` markers. Renovate keeps the SHA-pinned action versions up to date. |
+| **Symlink** (once per machine) | Claude Code agents | Claude Code reads agents from `~/.claude/agents/`, not from the repo — so this isn't per-project. Symlink once per machine; edits here take effect in every project immediately, and the setup survives a machine change via `git clone`. |
 
 ## What's Included
 
@@ -87,13 +88,31 @@ A ready-to-copy example is provided as `renovate.json` in this repository.
 | `AGENTS.md` | AI coding assistant guidelines (Codex, Claude, etc.) |
 | `.github/copilot-instructions.md` | GitHub Copilot-specific project instructions |
 
+### Claude Code Agents (symlink into `~/.claude/agents/`)
+
+| File | Purpose |
+|---|---|
+| `.claude/agents/release-notes.md` | Drafts release notes in a fixed six-section format with CVE verification, reused across all projects |
+
+On a new machine, after cloning this repo:
+
+```sh
+ln -s "$(pwd)/go-project-defaults/.claude/agents/release-notes.md" ~/.claude/agents/release-notes.md
+```
+
+Each consuming project needs its own `.claude/release-notes.yml` (project-specific
+parameters like the core dependency and pre-vetted CVE exceptions — see
+`release-notes.example.yml` in this repo, copy and customize; most repos need
+only the `core_dependency` key, some need none at all).
+
 ## Quick Start
 
 1. **Renovate**: Add `renovate.json` with the one-line `extends` reference (see [Renovate section](#renovate-reference--do-not-copy-defaultjson) above). Done — no copying needed.
-2. **Everything else**: Copy the files you need into your Go project.
-3. Search for `TODO:` comments and customize (project name, thresholds, paths).
-4. Set up required secrets and variables (see below).
-5. Let Renovate run once — it will pin any unpinned action tags to SHAs.
+2. **Claude Code agents**: Symlink once per machine (see [above](#claude-code-agents-symlink-into-claudeagents)) — not per project.
+3. **Everything else**: Copy the files you need into your Go project.
+4. Search for `TODO:` comments and customize (project name, thresholds, paths).
+5. Set up required secrets and variables (see below).
+6. Let Renovate run once — it will pin any unpinned action tags to SHAs.
 
 ## Secrets & Variables Setup
 
