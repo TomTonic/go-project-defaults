@@ -29,3 +29,7 @@ Thumbs.db
 
 # GoReleaser
 dist/
+
+# Claude Code: personal machine-specific overrides only; settings.json and
+# .claude/release-notes.yml are project-shared config and stay tracked.
+.claude/settings.local.json
