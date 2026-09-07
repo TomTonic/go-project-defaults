@@ -95,7 +95,26 @@ instead of researching each dependency by hand:
    regardless of reachability — a scanner run against the dependency tree
    would flag it either way, so it belongs here too. Remove the worktree
    afterward (`git worktree remove /tmp/release-notes-baseline`).
-2. If `grype` isn't installed, tell the user (install docs:
+2. Repeat the same worktree-diff on every *direct* dependency that is
+   itself a Go module with its own repo, at its old/new pinned versions —
+   don't stop at this repo. Also run `govulncheck ./...` against the old
+   checkout of each: a dependency's own release notes calling its bump
+   "routine maintenance" doesn't mean nothing security-relevant moved, and
+   `govulncheck` will tell you whether the fixed vulnerability was actually
+   reachable from that dependency's own exported code (worth calling out —
+   e.g. in New Features/Changed Behavior, not just the bare ID here — when
+   it was).
+3. If this repo has no package manifest of its own (`go.mod`,
+   `package.json`, etc.) — e.g. it's a Docker-image build wrapper that pins
+   its real dependencies (base images, or other repos built from source) as
+   tags/digests in a config file rather than importing them — `grype dir:.`
+   will silently find nothing. Identify those pinned references instead
+   (check the Dockerfile, build scripts, or a versions/config file) and
+   scan each directly: `grype <image-ref>` for an image tag or digest, or
+   clone + `git worktree` + step 1's diff (+ step 2's `govulncheck`, if it
+   has a `go.mod`) for a pinned external source repo, at both its old and
+   new pinned ref.
+4. If `grype` isn't installed, tell the user (install docs:
    https://github.com/anchore/grype#installation) and fall back to
    WebFetch/WebSearch against the dependency's own changelog or the
    GitHub/Go vulnerability databases — never guess or infer an identifier.
